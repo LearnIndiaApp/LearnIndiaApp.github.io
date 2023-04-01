@@ -38,3 +38,7 @@ Yes, You can go Live on Youtube during Meeting.
 
 - [@Uzma Memon]()
 - [@Nikhil Jaiswal]()
+
+## Support
+
+For support, email learnindiaapp@gmail.com
