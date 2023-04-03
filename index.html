@@ -1,80 +1,90 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Generate Paytm QR Code</title>
-    <meta charset="UTF-8" />
-  </head>
-  <body>
-    <h1>Generate Paytm QR Code</h1>
-    <form onsubmit="generateQRCode(); return false;">
-      <label>Amount:</label>
-      <input type="number" id="amount" />
-      <br />
-      <button type="submit">Generate QR Code</button>
-    </form>
-    <div id="qr_code"></div>
-    <div id="status"></div>
-    <script>
-      function generateQRCode() {
-        var amount = document.getElementById("amount").value;
-        var url = "https://securegw.paytm.in/paytmchecksum/paytmQRGenerate";
-        var payload = {
-          merchantId: "ncyhFY55833815626624",
-          amount: amount
-        };
-        var headers = {
-          "Content-Type": "application/json",
-          "x-mid": "ncyhFY55833815626624",
-          "x-encrequest": "true"
-        };
-        fetch(url, {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify(payload)
-        })
-          .then(function(response) {
-            return response.json();
-          })
-          .then(function(data) {
-            var qr_code_data = data.body.qrCode;
-            var qr_code_image = document.createElement("img");
-            qr_code_image.src = "data:image/jpeg;base64," + qr_code_data;
-            document.getElementById("qr_code").appendChild(qr_code_image);
-            setTimeout(checkTransactionStatus, 60000, data.body.txnId);
-          })
-          .catch(function(error) {
-            console.log(error);
-          });
-      }
+<head>
+    <title>Paytm QR Code Generator</title>
+</head>
+<body>
+    <div>
+        <h1>Paytm QR Code Generator</h1>
+        <p>Enter the transaction amount:</p>
+        <input type="number" id="amount">
+        <button onclick="generateQR()">Generate QR Code</button>
+    </div>
+    <div id="qr-code"></div>
+    <div id="transaction-status"></div>
 
-      function checkTransactionStatus(txnId) {
-        var url = "https://securegw.paytm.in/merchant-status/getTxnStatus";
-        var payload = {
-          orderId: txnId,
-          merchantId: "ncyhFY55833815626624"
-        };
-        var headers = {
-          "Content-Type": "application/json",
-          "x-mid": "ncyhFY55833815626624",
-          "x-encrequest": "true"
-        };
-        fetch(url, {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify(payload)
-        })
-          .then(function(response) {
-            return response.json();
-          })
-          .then(function(data) {
-            var status_message = "Transaction Status: " + data.body.resultInfo.resultStatus;
-            document.getElementById("status").textContent = status_message;
-            setTimeout(checkTransactionStatus, 60000, txnId);
-          })
-          .catch(function(error) {
-            console.log(error);
-          });
-      }
+    <script>
+        function generateQR() {
+            const amount = document.getElementById("amount").value;
+
+            const data = {
+                "mid": "ncyhFY55833815626624",
+                "orderId": "ORDER123",
+                "txnAmount": {
+                    "value": amount,
+                    "currency": "INR",
+                },
+                "userInfo": {
+                    "custId": "CUST123",
+                },
+            };
+
+            fetch("https://learnindiaapp.github.io/proxy/paytmQRGenerate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(response => {
+                const qrCodeData = response.body.qrCode;
+                const qrCodeImg = document.createElement("img");
+                qrCodeImg.src = qrCodeData;
+                document.getElementById("qr-code").appendChild(qrCodeImg);
+
+                // Start checking transaction status after 1 minute
+                setTimeout(checkTransactionStatus, 60000, response.body.txnId);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+        }
+
+        function checkTransactionStatus(txnId) {
+            const data = {
+                "mid": "ncyhFY55833815626624",
+                "orderId": "ORDER123",
+                "txnId": txnId,
+            };
+
+            fetch("https://learnindiaapp.github.io/proxy/paytmCheckTransactionStatus", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(response => {
+                const status = response.body.resultInfo.resultStatus;
+                const statusMsg = response.body.resultInfo.resultMsg;
+                const statusDiv = document.getElementById("transaction-status");
+
+                if (status === "TXN_SUCCESS") {
+                    statusDiv.innerHTML = "Transaction Successful!";
+                } else if (status === "TXN_FAILURE") {
+                    statusDiv.innerHTML = "Transaction Failed: " + statusMsg;
+                } else {
+                    // Transaction still in progress, check again after 1 minute
+                    statusDiv.innerHTML = "Transaction Status: " + statusMsg;
+                    setTimeout(checkTransactionStatus, 60000, txnId);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+        }
     </script>
-  </body>
+</body>
 </html>
